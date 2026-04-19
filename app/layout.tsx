@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Mono } from "next/font/google";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import "./globals.css";
 
 /* ── Fonts ──────────────────────────────────────────────── */
@@ -15,7 +17,7 @@ const dmMono = DM_Mono({
   subsets: ["latin"],
   variable: "--font-dm-mono",
   display: "swap",
-  weight: ["300", "400", "500"],
+  weight: ["400", "500"],
 });
 
 /* ── Metadata ───────────────────────────────────────────── */
@@ -65,11 +67,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${dmSans.variable} ${dmMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="font-sans bg-bg-primary text-text-primary antialiased">
-        {children}
+      <body className="font-sans bg-bg-primary text-text-primary antialiased flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-1 pt-14">{children}</main>
+        <Footer />
       </body>
     </html>
   );
