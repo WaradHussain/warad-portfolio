@@ -1,7 +1,7 @@
 import { createClient } from '@sanity/client'
-import imageUrlBuilder from '@sanity/image-url'
+import { createImageUrlBuilder } from '@sanity/image-url'
 import { groq } from 'next-sanity'
-import type { SanityImageSource } from '@sanity/image-url/lib/types/types'
+import type { SanityImageSource } from '@sanity/image-url'
 
 // ── Environment Validation ───────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ export const sanityClient = createClient({
 
 // ── Image URL Builder ────────────────────────────────────────────────────────
 
-const builder = imageUrlBuilder(sanityClient)
+const builder = createImageUrlBuilder(sanityClient)
 
 export function urlFor(source: SanityImageSource) {
   return builder.image(source)
@@ -120,7 +120,7 @@ export const projectBySlugQuery = groq`*[_type == "project" && slug.current == $
   wouldRedo
 }`
 
-export const allProjectSlugsQuery = groq`*[_type == "project"]{"slug": slug.current}`
+export const allProjectSlugsQuery = groq`*[_type == "project"]{"slug": slug.current, title}`
 
 // CERTIFICATES
 

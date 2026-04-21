@@ -68,4 +68,5 @@ export interface RoadmapItem {
 
 export interface SanitySlug {
   slug: string
+  title?: string
 }
