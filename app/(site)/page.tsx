@@ -159,13 +159,13 @@ export default function HomePage() {
           {/* CTAs */}
           <div className="flex gap-3 mt-8 flex-wrap">
             <Link
-              href="/"
+              href="/projects"
               className="bg-accent-green text-bg-primary px-6 py-3 rounded-lg font-semibold hover:bg-accent-green/90 transition-colors"
             >
               View Projects
             </Link>
             <Link
-              href="/"
+              href="/blog"
               className="border border-border-glass text-text-primary px-6 py-3 rounded-lg hover:border-accent-green/40 transition-colors"
             >
               Read Blog
