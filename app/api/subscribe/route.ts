@@ -1,8 +1,16 @@
+import { subscribeRatelimit, applyRatelimit } from '@/lib/ratelimit'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 
 export async function POST(req: NextRequest) {
+  const { limited } = await applyRatelimit(subscribeRatelimit, req)
+  if (limited) {
+  return NextResponse.json(
+    { error: 'Too many requests. Try again later.' },
+    { status: 429 }
+    )
+    }
   try {
     const body = await req.json()
 
