@@ -10,7 +10,7 @@ const navLinks = [
   { href: "/projects", label: "Projects" },
   { href: "/blog", label: "Blog" },
   { href: "/certificates", label: "Certificates" },
-  // { href: "/roadmap", label: "Roadmap" },
+  { href: "/roadmap", label: "Roadmap" },
   { href: "/contact", label: "Contact" },
 ];
 
