@@ -3,7 +3,7 @@ import { DM_Sans, DM_Mono } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import "./globals.css";
-
+import NewsletterProvider from '@/components/newsletter/NewsletterProvider'
 /* ── Fonts ──────────────────────────────────────────────── */
 
 const dmSans = DM_Sans({
@@ -75,6 +75,7 @@ export default function RootLayout({
         <Navbar />
         <main className="flex-1 pt-14">{children}</main>
         <Footer />
+        <NewsletterProvider />
       </body>
     </html>
   );
