@@ -2,8 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Mono } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import ChatWidget from '@/components/chatbot/ChatWidget'
 import "./globals.css";
 import NewsletterProvider from '@/components/newsletter/NewsletterProvider'
+
 /* ── Fonts ──────────────────────────────────────────────── */
 
 const dmSans = DM_Sans({
@@ -23,33 +25,22 @@ const dmMono = DM_Mono({
 /* ── Metadata ───────────────────────────────────────────── */
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://waradhussain.com'),
   title: {
-    default: "Warad Hussain — Python & AI Engineer",
-    template: "%s | Warad Hussain",
+    default: 'Warad Hussain — Python & AI Engineer',
+    template: '%s — Warad Hussain',
   },
-  description:
-    "Python backend and AI engineer building production-grade systems.",
-  metadataBase: new URL("https://waradhussain.com"),
+  description: 'Python backend and AI engineer building production-grade systems.',
   openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://waradhussain.com",
-    siteName: "Warad Hussain",
-    title: "Warad Hussain — Python & AI Engineer",
-    description:
-      "Python backend and AI engineer building production-grade systems.",
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://waradhussain.com',
+    siteName: 'Warad Hussain',
+    images: [{ url: '/og/default.png', width: 1200, height: 630 }],
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Warad Hussain — Python & AI Engineer",
-    description:
-      "Python backend and AI engineer building production-grade systems.",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+  twitter: { card: 'summary_large_image' },
+  robots: { index: true, follow: true },
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -72,10 +63,20 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="font-sans bg-bg-primary text-text-primary antialiased flex flex-col min-h-screen">
+
+        {/* Accessibility: skip to main content */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-[#00E87A] focus:text-[#0A0A0A] focus:px-4 focus:py-2 focus:rounded-lg focus:font-semibold"
+        >
+          Skip to content
+        </a>
+
         <Navbar />
-        <main className="flex-1 pt-14">{children}</main>
+        <main id="main-content" className="flex-1 pt-14">{children}</main>
         <Footer />
         <NewsletterProvider />
+        {/* <ChatWidget /> */}
       </body>
     </html>
   );
