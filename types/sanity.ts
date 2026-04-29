@@ -1,6 +1,4 @@
 // types/sanity.ts
-// category fields changed from union literals to string
-// so any category typed in Sanity Studio works on the frontend
 
 // ── Blog ────────────────────────────────────────────────────────────────────
 
@@ -8,7 +6,7 @@ export interface SanityPost {
   title: string
   slug: string
   excerpt: string
-  category: string          // was: 'Python' | 'AI' | 'Engineering' | 'Career'
+  category: string
   publishedAt: string
   coverImage: string | null
   coverImageAlt: string | null
@@ -25,7 +23,7 @@ export interface SanityPostFull extends SanityPost {
 export interface SanityProject {
   title: string
   slug: string
-  category: string          // was: 'Python' | 'AI/ML' | 'Full-Stack' | 'Tools'
+  category: string
   shortDescription: string
   techStack: string[]
   githubUrl: string
@@ -51,7 +49,7 @@ export interface SanityCertificate {
   name: string
   issuer: string
   date: string
-  category: string          // was: 'AI/ML' | 'Backend' | 'Cloud' | 'Other'
+  category: string
   image: string
   imageAlt: string
   credentialUrl: string | null
@@ -62,12 +60,12 @@ export interface SanityCertificate {
 export interface RoadmapItem {
   topic: string
   status: 'Learned' | 'Learning' | 'Planned'
-  category: string          // was: 'Backend' | 'AI/ML' | 'DevOps' | 'Frontend' | 'Tools'
+  category: string
   resources: string[]
   projectSlug: string | null
 }
 
-// ── Tech Stack (new) ─────────────────────────────────────────────────────────
+// ── Tech Stack ───────────────────────────────────────────────────────────────
 
 export interface TechStack {
   _id: string
@@ -76,12 +74,17 @@ export interface TechStack {
   displayOrder: number
 }
 
-// ── Currently Building (new) ─────────────────────────────────────────────────
+// ── Currently Building ───────────────────────────────────────────────────────
 
 export interface CurrentlyBuilding {
   _id: string
+  emoji: string
+  title: string
   description: string
+  status: 'planning' | 'building' | 'almost-done' | 'shipped'
+  techTags: string[]
   link: string | null
+  isVisible: boolean
 }
 
 // ── Slug helper ──────────────────────────────────────────────────────────────

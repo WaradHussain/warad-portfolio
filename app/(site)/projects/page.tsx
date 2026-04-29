@@ -7,7 +7,7 @@ export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Projects',
-  description: 'Production-grade Python and AI projects with full case studies.',
+  description: 'Production-grade with full case studies.',
 }
 
 export default async function ProjectsPage() {

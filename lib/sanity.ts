@@ -12,7 +12,6 @@ if (!projectId) throw new Error('NEXT_PUBLIC_SANITY_PROJECT_ID is not set')
 if (!dataset) throw new Error('NEXT_PUBLIC_SANITY_DATASET is not set')
 
 // useCdn: false — direct API, no CDN cache delay
-// This is the single most important fix for slow updates
 export const sanityClient = createClient({
   projectId,
   dataset,
@@ -25,7 +24,6 @@ export function urlFor(source: SanityImageSource) {
   return builder.image(source)
 }
 
-// 60s fallback revalidation — webhook handles instant updates
 export async function sanityFetch<T>(
   query: string,
   params: Record<string, unknown> = {},
@@ -133,7 +131,7 @@ export const allRoadmapQuery = groq`*[_type == "roadmap"] | order(order asc) {
   projectSlug
 }`
 
-// ── TECH STACK (new) ──────────────────────────────────────────────────────────
+// ── TECH STACK ────────────────────────────────────────────────────────────────
 
 export const techStackQuery = groq`*[_type == "techStack"] | order(displayOrder asc) {
   _id,
@@ -142,10 +140,14 @@ export const techStackQuery = groq`*[_type == "techStack"] | order(displayOrder 
   displayOrder
 }`
 
-// ── CURRENTLY BUILDING (new) ──────────────────────────────────────────────────
+// ── CURRENTLY BUILDING ────────────────────────────────────────────────────────
 
-export const currentlyBuildingQuery = groq`*[_type == "currentlyBuilding" && isActive == true] | order(_createdAt desc) {
+export const currentlyBuildingQuery = groq`*[_type == "currentlyBuilding" && isVisible == true] | order(_createdAt desc) {
   _id,
+  emoji,
+  title,
   description,
+  status,
+  techTags,
   link
 }`

@@ -10,7 +10,7 @@ import {
 import type { SanityProject, SanityPost, TechStack, CurrentlyBuilding } from '@/types/sanity'
 import Typewriter from '@/components/ui/Typewriter'
 import TechStackScroll from '@/components/home/TechStackScroll'
-import CurrentlyBuildingPill from '@/components/home/CurrentlyBuilding'
+import CurrentlyBuildingSection from '@/components/home/CurrentlyBuilding'
 
 // ── Badge colors ──────────────────────────────────────────────────────────────
 
@@ -57,7 +57,6 @@ function TechBadge({ name }: { name: string }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-// 60s revalidation fallback — webhook handles instant updates
 export const revalidate = 60
 
 export default async function HomePage() {
@@ -70,7 +69,6 @@ export default async function HomePage() {
 
   const featuredProjects = allProjects.filter((p) => p.featured).slice(0, 3)
   const latestPost = allPosts[0] ?? null
-  const currentBuild = currentlyBuilding[0] ?? null
 
   return (
     <div className="max-w-6xl mx-auto px-6">
@@ -78,7 +76,6 @@ export default async function HomePage() {
       {/* ── Hero ─────────────────────────────────────────── */}
       <section className="min-h-[85vh] flex items-center py-20">
         <div className="w-full">
-
           <div className="inline-flex items-center gap-2 bg-accent-dim border border-accent-green/20 rounded-full px-3 py-1 mb-8">
             <span className="w-2 h-2 rounded-full bg-accent-green animate-pulse" />
             <span className="text-accent-green text-sm font-mono">Open to opportunities</span>
@@ -168,19 +165,17 @@ export default async function HomePage() {
       </section>
 
       {/* ── Currently Building — Sanity powered ──────────── */}
-      <section className="py-10">
-        <CurrentlyBuildingPill item={currentBuild} />
-      </section>
+      <CurrentlyBuildingSection items={currentlyBuilding} />
 
       {/* ── Tech Stack — Sanity powered + animated ────────── */}
       <section className="py-20">
-        <SectionHeader number="02." title="Stack" />
+        <SectionHeader number="03." title="Stack" />
         <TechStackScroll items={techStack} />
       </section>
 
       {/* ── Latest Post ───────────────────────────────────── */}
       <section className="py-20">
-        <SectionHeader number="03." title="Latest Post" />
+        <SectionHeader number="04." title="Latest Post" />
 
         {latestPost ? (
           <Link
