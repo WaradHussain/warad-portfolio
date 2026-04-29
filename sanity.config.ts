@@ -17,21 +17,23 @@ export default defineConfig({
   projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
   dataset: process.env.NEXT_PUBLIC_SANITY_DATASET,
   basePath: '/studio',
- plugins: [
-  structureTool({
-    title: 'Content',
-    structure: (S) =>
-      S.list()
-        .title('Content')
-        .items([
-          S.listItem().title('Blog Posts').schemaType('post').child(S.documentTypeList('post')),
-          S.listItem().title('Projects').schemaType('project').child(S.documentTypeList('project')),
-          S.listItem().title('Certificates').schemaType('certificate').child(S.documentTypeList('certificate')),
-          S.listItem().title('Roadmap').schemaType('roadmap').child(S.documentTypeList('roadmap')),
-        ]),
-  }),
-  visionTool(),
-  codeInput(),
-],
+  plugins: [
+    structureTool({
+      title: 'Content',
+      structure: (S) =>
+        S.list()
+          .title('Content')
+          .items([
+            S.listItem().title('Blog Posts').schemaType('post').child(S.documentTypeList('post')),
+            S.listItem().title('Projects').schemaType('project').child(S.documentTypeList('project')),
+            S.listItem().title('Certificates').schemaType('certificate').child(S.documentTypeList('certificate')),
+            S.listItem().title('Roadmap').schemaType('roadmap').child(S.documentTypeList('roadmap')),
+            S.listItem().title('Tech Stack').schemaType('techStack').child(S.documentTypeList('techStack')),
+            S.listItem().title('Currently Building').schemaType('currentlyBuilding').child(S.documentTypeList('currentlyBuilding')),
+          ]),
+    }),
+    visionTool(),
+    codeInput(),
+  ],
   schema: { types: schemaTypes },
 })
