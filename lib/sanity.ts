@@ -1,56 +1,45 @@
+// lib/sanity.ts
+
 import { createClient } from '@sanity/client'
 import { createImageUrlBuilder } from '@sanity/image-url'
 import { groq } from 'next-sanity'
 import type { SanityImageSource } from '@sanity/image-url'
 
-// ── Environment Validation ───────────────────────────────────────────────────
-
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET
 
-if (!projectId) throw new Error('NEXT_PUBLIC_SANITY_PROJECT_ID is not set in .env.local')
-if (!dataset) throw new Error('NEXT_PUBLIC_SANITY_DATASET is not set in .env.local')
+if (!projectId) throw new Error('NEXT_PUBLIC_SANITY_PROJECT_ID is not set')
+if (!dataset) throw new Error('NEXT_PUBLIC_SANITY_DATASET is not set')
 
-// ── Read-only Client (no token — public data only) ───────────────────────────
-
+// useCdn: false — direct API, no CDN cache delay
+// This is the single most important fix for slow updates
 export const sanityClient = createClient({
   projectId,
   dataset,
   apiVersion: '2024-01-01',
-  useCdn: true,
+  useCdn: false,
 })
 
-// ── Image URL Builder ────────────────────────────────────────────────────────
-
 const builder = createImageUrlBuilder(sanityClient)
-
 export function urlFor(source: SanityImageSource) {
   return builder.image(source)
 }
 
-// ── Generic Fetch (error handling + ISR revalidation) ────────────────────────
-
+// 60s fallback revalidation — webhook handles instant updates
 export async function sanityFetch<T>(
   query: string,
   params: Record<string, unknown> = {},
-  revalidate: number = 60
+  revalidate = 60
 ): Promise<T> {
   try {
-    const data = await sanityClient.fetch<T>(query, params, {
-      next: { revalidate },
-    })
-    return data
+    return await sanityClient.fetch<T>(query, params, { next: { revalidate } })
   } catch (error) {
     console.error('Sanity fetch error:', error)
-    throw new Error(
-      `Failed to fetch from Sanity: ${error instanceof Error ? error.message : 'Unknown error'}`
-    )
+    throw new Error(`Sanity fetch failed: ${error instanceof Error ? error.message : 'Unknown'}`)
   }
 }
 
-// ── GROQ Queries ─────────────────────────────────────────────────────────────
-
-// BLOG
+// ── BLOG ──────────────────────────────────────────────────────────────────────
 
 export const allPostsQuery = groq`*[_type == "post"] | order(publishedAt desc) {
   title,
@@ -85,7 +74,7 @@ export const relatedPostsQuery = groq`*[_type == "post" && category == $category
 
 export const allPostSlugsQuery = groq`*[_type == "post"]{"slug": slug.current}`
 
-// PROJECTS
+// ── PROJECTS ──────────────────────────────────────────────────────────────────
 
 export const allProjectsQuery = groq`*[_type == "project"] | order(order asc, _createdAt desc) {
   title,
@@ -122,7 +111,7 @@ export const projectBySlugQuery = groq`*[_type == "project" && slug.current == $
 
 export const allProjectSlugsQuery = groq`*[_type == "project"]{"slug": slug.current, title}`
 
-// CERTIFICATES
+// ── CERTIFICATES ──────────────────────────────────────────────────────────────
 
 export const allCertificatesQuery = groq`*[_type == "certificate"] | order(order asc, _createdAt desc) {
   name,
@@ -134,7 +123,7 @@ export const allCertificatesQuery = groq`*[_type == "certificate"] | order(order
   "imageAlt": image.alt
 }`
 
-// ROADMAP
+// ── ROADMAP ───────────────────────────────────────────────────────────────────
 
 export const allRoadmapQuery = groq`*[_type == "roadmap"] | order(order asc) {
   topic,
@@ -142,4 +131,21 @@ export const allRoadmapQuery = groq`*[_type == "roadmap"] | order(order asc) {
   category,
   resources,
   projectSlug
+}`
+
+// ── TECH STACK (new) ──────────────────────────────────────────────────────────
+
+export const techStackQuery = groq`*[_type == "techStack"] | order(displayOrder asc) {
+  _id,
+  name,
+  category,
+  displayOrder
+}`
+
+// ── CURRENTLY BUILDING (new) ──────────────────────────────────────────────────
+
+export const currentlyBuildingQuery = groq`*[_type == "currentlyBuilding" && isActive == true] | order(_createdAt desc) {
+  _id,
+  description,
+  link
 }`

@@ -1,9 +1,10 @@
+// app/(site)/roadmap/page.tsx
 import type { Metadata } from 'next'
 import { sanityClient, allRoadmapQuery } from '@/lib/sanity'
 import type { RoadmapItem } from '@/types/sanity'
 import RoadmapClient from '@/components/roadmap/RoadmapClient'
 
-export const revalidate = 3600
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Roadmap',
@@ -11,7 +12,11 @@ export const metadata: Metadata = {
 }
 
 export default async function RoadmapPage() {
-  const items = await sanityClient.fetch<RoadmapItem[]>(allRoadmapQuery)
+  const items = await sanityClient.fetch<RoadmapItem[]>(
+    allRoadmapQuery,
+    {},
+    { next: { revalidate: 60 } }
+  )
 
   return (
     <main className="max-w-6xl mx-auto px-4 md:px-8 py-16">
@@ -24,7 +29,7 @@ export default async function RoadmapPage() {
           Learning OS
         </h1>
         <p className="text-text-secondary mt-2 text-base">
-          My public roadmap — what I've mastered, what I'm studying, and what's next.
+          My public roadmap — what I&apos;ve mastered, what I&apos;m studying, and what&apos;s next.
         </p>
       </div>
 

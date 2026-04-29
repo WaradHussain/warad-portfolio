@@ -1,9 +1,10 @@
+// app/(site)/certificates/page.tsx
 import type { Metadata } from 'next'
 import { sanityClient, allCertificatesQuery } from '@/lib/sanity'
 import type { SanityCertificate } from '@/types/sanity'
 import CertificatesClient from '@/components/certificates/CertificatesClient'
 
-export const revalidate = 3600
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Certificates',
@@ -11,7 +12,11 @@ export const metadata: Metadata = {
 }
 
 export default async function CertificatesPage() {
-  const certs = await sanityClient.fetch<SanityCertificate[]>(allCertificatesQuery)
+  const certs = await sanityClient.fetch<SanityCertificate[]>(
+    allCertificatesQuery,
+    {},
+    { next: { revalidate: 60 } }
+  )
 
   return (
     <main className="max-w-6xl mx-auto px-4 md:px-8 py-16">

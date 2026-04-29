@@ -1,3 +1,4 @@
+// sanity/schemas/post.ts
 import { defineField, defineType } from 'sanity'
 
 export default defineType({
@@ -79,15 +80,9 @@ export default defineType({
       name: 'category',
       title: 'Category',
       type: 'string',
-      options: {
-        list: [
-          { title: 'Python', value: 'Python' },
-          { title: 'AI', value: 'AI' },
-          { title: 'Engineering', value: 'Engineering' },
-          { title: 'Career', value: 'Career' },
-        ],
-        layout: 'radio',
-      },
+      // Free text — type any category (Python, AI, Engineering, Career, etc.)
+      // Automatically appears as filter button on blog page
+      description: 'e.g. Python, AI, Engineering, Career — type anything, appears as filter automatically',
       validation: (Rule) => Rule.required(),
     }),
     defineField({

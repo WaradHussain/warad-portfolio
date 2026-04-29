@@ -5,6 +5,8 @@ import Footer from "@/components/layout/Footer";
 import ChatWidget from '@/components/chatbot/ChatWidget'
 import "./globals.css";
 import NewsletterProvider from '@/components/newsletter/NewsletterProvider'
+import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/next"
 
 /* ── Fonts ──────────────────────────────────────────────── */
 
@@ -77,6 +79,8 @@ export default function RootLayout({
         <Footer />
         <NewsletterProvider />
         {/* <ChatWidget /> */}
+        <Analytics/>
+        <SpeedInsights/>
       </body>
     </html>
   );

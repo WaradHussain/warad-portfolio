@@ -3,7 +3,7 @@ import { sanityFetch, allProjectsQuery } from '@/lib/sanity'
 import type { SanityProject } from '@/types/sanity'
 import ProjectsClient from '@/components/projects/ProjectsClient'
 
-export const revalidate = 3600
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Projects',

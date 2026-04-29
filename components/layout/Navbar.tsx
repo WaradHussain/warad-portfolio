@@ -49,7 +49,7 @@ export default function Navbar() {
           <Link
             href="/"
             className="font-mono font-bold text-xl text-accent-green tracking-tight hover:opacity-80 transition-opacity"
-            aria-label="Warad Hussain — Home"
+            aria-label="Home"
           >
             WH
           </Link>

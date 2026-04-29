@@ -3,7 +3,7 @@ import { sanityFetch, allPostsQuery } from '@/lib/sanity'
 import type { SanityPost } from '@/types/sanity'
 import BlogClient from '@/components/blog/BlogClient'
 
-export const revalidate = 3600
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Blog',

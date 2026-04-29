@@ -1,3 +1,4 @@
+// sanity/schemas/certificate.ts
 import { defineField, defineType } from 'sanity'
 
 export default defineType({
@@ -28,15 +29,9 @@ export default defineType({
       name: 'category',
       title: 'Category',
       type: 'string',
-      options: {
-        list: [
-          { title: 'AI/ML', value: 'AI/ML' },
-          { title: 'Backend', value: 'Backend' },
-          { title: 'Cloud', value: 'Cloud' },
-          { title: 'Other', value: 'Other' },
-        ],
-        layout: 'radio',
-      },
+      // Free text — type any category (AI/ML, Backend, Cloud, Other, etc.)
+      // Automatically appears as filter button on certificates page
+      description: 'e.g. AI/ML, Backend, Cloud, Other — type anything, appears as filter automatically',
       validation: (Rule) => Rule.required(),
     }),
     defineField({

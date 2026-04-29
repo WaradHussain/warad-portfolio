@@ -1,7 +1,16 @@
+// app/(site)/page.tsx
 import Link from 'next/link'
-import { sanityClient, allProjectsQuery, allPostsQuery } from '@/lib/sanity'
-import type { SanityProject, SanityPost } from '@/types/sanity'
+import {
+  sanityClient,
+  allProjectsQuery,
+  allPostsQuery,
+  techStackQuery,
+  currentlyBuildingQuery,
+} from '@/lib/sanity'
+import type { SanityProject, SanityPost, TechStack, CurrentlyBuilding } from '@/types/sanity'
 import Typewriter from '@/components/ui/Typewriter'
+import TechStackScroll from '@/components/home/TechStackScroll'
+import CurrentlyBuildingPill from '@/components/home/CurrentlyBuilding'
 
 // ── Badge colors ──────────────────────────────────────────────────────────────
 
@@ -17,11 +26,6 @@ const STACK_COLORS: Record<string, string> = {
   'Next.js': '#a0a0a0',
   Supabase: '#06b6d4',
 }
-
-const TECH_STACK = [
-  'Python', 'FastAPI', 'Django', 'LangChain',
-  'Next.js', 'Supabase', 'PostgreSQL', 'Docker',
-]
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -53,17 +57,20 @@ function TechBadge({ name }: { name: string }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export const revalidate = 3600
+// 60s revalidation fallback — webhook handles instant updates
+export const revalidate = 60
 
 export default async function HomePage() {
-  // Fetch featured projects + latest post in parallel
-  const [allProjects, allPosts] = await Promise.all([
-    sanityClient.fetch<SanityProject[]>(allProjectsQuery).catch(() => []),
-    sanityClient.fetch<SanityPost[]>(allPostsQuery).catch(() => []),
+  const [allProjects, allPosts, techStack, currentlyBuilding] = await Promise.all([
+    sanityClient.fetch<SanityProject[]>(allProjectsQuery, {}, { next: { revalidate: 60 } }).catch(() => [] as SanityProject[]),
+    sanityClient.fetch<SanityPost[]>(allPostsQuery, {}, { next: { revalidate: 60 } }).catch(() => [] as SanityPost[]),
+    sanityClient.fetch<TechStack[]>(techStackQuery, {}, { next: { revalidate: 60 } }).catch(() => [] as TechStack[]),
+    sanityClient.fetch<CurrentlyBuilding[]>(currentlyBuildingQuery, {}, { next: { revalidate: 60 } }).catch(() => [] as CurrentlyBuilding[]),
   ])
 
   const featuredProjects = allProjects.filter((p) => p.featured).slice(0, 3)
   const latestPost = allPosts[0] ?? null
+  const currentBuild = currentlyBuilding[0] ?? null
 
   return (
     <div className="max-w-6xl mx-auto px-6">
@@ -72,27 +79,22 @@ export default async function HomePage() {
       <section className="min-h-[85vh] flex items-center py-20">
         <div className="w-full">
 
-          {/* Status badge */}
           <div className="inline-flex items-center gap-2 bg-accent-dim border border-accent-green/20 rounded-full px-3 py-1 mb-8">
             <span className="w-2 h-2 rounded-full bg-accent-green animate-pulse" />
             <span className="text-accent-green text-sm font-mono">Open to opportunities</span>
           </div>
 
-          {/* Name */}
           <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-text-primary">
             Warad Hussain
           </h1>
 
-          {/* Typewriter — client component */}
           <Typewriter />
 
-          {/* Bio */}
           <p className="text-text-secondary text-lg leading-relaxed max-w-xl mt-4">
             I build production-grade Python backends and AI systems. Specialized
             in RAG pipelines, FastAPI microservices, and LangChain agents.
           </p>
 
-          {/* CTAs */}
           <div className="flex gap-3 mt-8 flex-wrap">
             <Link
               href="/projects"
@@ -165,34 +167,15 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Currently Building ────────────────────────────── */}
+      {/* ── Currently Building — Sanity powered ──────────── */}
       <section className="py-10">
-        <div className="inline-flex items-center gap-3 bg-bg-glass border border-border-glass rounded-full px-4 py-2">
-          <span className="text-accent-green font-mono text-sm">▸ currently building</span>
-          <span className="text-text-secondary text-sm">waradhussain.com — engineering portfolio</span>
-        </div>
+        <CurrentlyBuildingPill item={currentBuild} />
       </section>
 
-      {/* ── Tech Stack ────────────────────────────────────── */}
+      {/* ── Tech Stack — Sanity powered + animated ────────── */}
       <section className="py-20">
         <SectionHeader number="02." title="Stack" />
-        <div className="flex flex-wrap gap-3">
-          {TECH_STACK.map((tech) => {
-            const color = STACK_COLORS[tech] ?? '#888888'
-            return (
-              <div
-                key={tech}
-                className="bg-bg-glass border border-border-glass rounded-lg px-4 py-2 flex items-center gap-2"
-              >
-                <span
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: color }}
-                />
-                <span className="text-sm font-mono text-text-primary">{tech}</span>
-              </div>
-            )
-          })}
-        </div>
+        <TechStackScroll items={techStack} />
       </section>
 
       {/* ── Latest Post ───────────────────────────────────── */}
@@ -237,7 +220,7 @@ export default async function HomePage() {
           <div>
             <p className="font-semibold text-text-primary">Get in touch</p>
             <p className="text-text-muted text-sm font-mono mt-1">
-              waradhussainofficial@gmail.com
+              contact@waradhussain.com
             </p>
           </div>
           <div className="flex gap-3">

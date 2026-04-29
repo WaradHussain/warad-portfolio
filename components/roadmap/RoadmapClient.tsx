@@ -1,63 +1,50 @@
 'use client'
+// components/roadmap/RoadmapClient.tsx
 
 import { useState, useMemo } from 'react'
 import type { RoadmapItem } from '@/types/sanity'
 import RoadmapCard from './RoadmapCard'
 import RoadmapSlideOver from './RoadmapSlideOver'
 
-const CATEGORIES = ['All', 'Backend', 'AI/ML', 'DevOps', 'Frontend', 'Tools'] as const
-
-interface RoadmapClientProps {
+interface Props {
   items: RoadmapItem[]
 }
 
-type Status = 'Learned' | 'Learning' | 'Planned'
+const STATUS_COLS = [
+  { key: 'Learned',  label: 'Learned',      icon: '✓', color: 'text-accent-green' },
+  { key: 'Learning', label: 'Learning Now',  icon: '●', color: 'text-yellow-400'   },
+  { key: 'Planned',  label: 'Planned',       icon: '○', color: 'text-text-muted'   },
+] as const
 
-const COLUMNS: { status: Status; label: string; icon: React.ReactNode }[] = [
-  {
-    status: 'Learned',
-    label: 'Learned',
-    icon: <span className="text-green-500 text-sm">✓</span>,
-  },
-  {
-    status: 'Learning',
-    label: 'Learning Now',
-    icon: <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse inline-block" />,
-  },
-  {
-    status: 'Planned',
-    label: 'Planned',
-    icon: <span className="text-text-muted text-sm">○</span>,
-  },
-]
+export default function RoadmapClient({ items }: Props) {
+  const [selected, setSelected] = useState('All')
+  const [activeItem, setActiveItem] = useState<RoadmapItem | null>(null)
 
-const STATUS_COLORS: Record<Status, string> = {
-  Learned: 'text-green-500',
-  Learning: 'text-yellow-500',
-  Planned: 'text-text-muted',
-}
-
-export default function RoadmapClient({ items }: RoadmapClientProps) {
-  const [selectedCategory, setSelectedCategory] = useState('All')
-  const [selectedItem, setSelectedItem] = useState<RoadmapItem | null>(null)
+  // Derive categories dynamically from actual Sanity data — no hardcoding
+  const categories = useMemo(() => {
+    const unique = Array.from(new Set(items.map((i) => i.category).filter(Boolean)))
+    return ['All', ...unique.sort()]
+  }, [items])
 
   const filtered = useMemo(() => {
-    if (selectedCategory === 'All') return items
-    return items.filter((i) => i.category === selectedCategory)
-  }, [items, selectedCategory])
-
-  const byStatus = (status: Status) => filtered.filter((i) => i.status === status)
+    if (selected === 'All') return items
+    return items.filter((i) => i.category === selected)
+  }, [items, selected])
 
   return (
     <>
-      {/* Category filter */}
-      <div className="flex flex-wrap gap-2 mb-8" role="group" aria-label="Filter by category">
-        {CATEGORIES.map((cat) => {
-          const isActive = selectedCategory === cat
+      {/* Category filter — dynamic from Sanity data */}
+      <div
+        className="flex flex-wrap gap-2 mb-10"
+        role="group"
+        aria-label="Filter roadmap by category"
+      >
+        {categories.map((cat) => {
+          const isActive = selected === cat
           return (
             <button
               key={cat}
-              onClick={() => setSelectedCategory(cat)}
+              onClick={() => setSelected(cat)}
               aria-pressed={isActive}
               className={
                 isActive
@@ -71,33 +58,32 @@ export default function RoadmapClient({ items }: RoadmapClientProps) {
         })}
       </div>
 
-      {/* 3 column grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-        {COLUMNS.map(({ status, label, icon }) => {
-          const colItems = byStatus(status)
+      {/* Kanban columns */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {STATUS_COLS.map(({ key, label, icon, color }) => {
+          const colItems = filtered.filter((i) => i.status === key)
           return (
-            <div key={status}>
+            <div key={key}>
               {/* Column header */}
               <div className="flex items-center gap-2 mb-4">
-                {icon}
-                <span className={`text-sm font-mono font-medium ${STATUS_COLORS[status]}`}>
-                  {label}
+                <span className={`font-mono text-sm font-semibold ${color}`}>
+                  {icon} {label}
                 </span>
-                <span className="ml-auto text-xs font-mono text-text-muted bg-bg-glass border border-border-glass rounded px-1.5 py-0.5">
+                <span className="ml-auto text-xs font-mono text-text-muted bg-bg-elevated px-2 py-0.5 rounded-full">
                   {colItems.length}
                 </span>
               </div>
 
               {/* Cards */}
-              <div className="space-y-2">
+              <div className="flex flex-col gap-3">
                 {colItems.length === 0 ? (
-                  <p className="text-text-muted font-mono text-xs">Nothing here yet.</p>
+                  <p className="text-text-muted font-mono text-xs py-4">Nothing here yet.</p>
                 ) : (
                   colItems.map((item) => (
                     <RoadmapCard
-                      key={item.topic}
+                      key={item.topic + item.status}
                       item={item}
-                      onClick={() => setSelectedItem(item)}
+                      onClick={() => setActiveItem(item)}
                     />
                   ))
                 )}
@@ -107,11 +93,10 @@ export default function RoadmapClient({ items }: RoadmapClientProps) {
         })}
       </div>
 
-      {/* Slide over */}
-      <RoadmapSlideOver
-        item={selectedItem}
-        onClose={() => setSelectedItem(null)}
-      />
+      {/* Slide-over */}
+      {activeItem && (
+        <RoadmapSlideOver item={activeItem} onClose={() => setActiveItem(null)} />
+      )}
     </>
   )
 }

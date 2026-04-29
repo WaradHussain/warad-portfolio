@@ -1,3 +1,4 @@
+// sanity/schemas/project.ts
 import { defineField, defineType } from 'sanity'
 
 export default defineType({
@@ -22,15 +23,9 @@ export default defineType({
       name: 'category',
       title: 'Category',
       type: 'string',
-      options: {
-        list: [
-          { title: 'Python', value: 'Python' },
-          { title: 'AI/ML', value: 'AI/ML' },
-          { title: 'Full-Stack', value: 'Full-Stack' },
-          { title: 'Tools', value: 'Tools' },
-        ],
-        layout: 'radio',
-      },
+      // Free text — type any category you want (e.g. Python, AI/ML, Tools, Full-Stack)
+      // Whatever you type here will automatically appear as a filter on the site
+      description: 'e.g. Python, AI/ML, Full-Stack, Tools — type anything, it shows as a filter automatically',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -124,6 +119,7 @@ export default defineType({
       name: 'featured',
       title: 'Featured',
       type: 'boolean',
+      description: 'Show on homepage?',
       initialValue: false,
     }),
     defineField({

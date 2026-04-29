@@ -1,3 +1,4 @@
+// sanity/schemas/roadmap.ts
 import { defineField, defineType } from 'sanity'
 
 export default defineType({
@@ -17,10 +18,11 @@ export default defineType({
       title: 'Status',
       type: 'string',
       options: {
+        // Status stays as radio — only 3 valid values, no reason to free-text this
         list: [
-          { title: 'Learned', value: 'Learned' },
-          { title: 'Learning', value: 'Learning' },
-          { title: 'Planned', value: 'Planned' },
+          { title: '✅ Learned', value: 'Learned' },
+          { title: '🔵 Learning Now', value: 'Learning' },
+          { title: '⬜ Planned', value: 'Planned' },
         ],
         layout: 'radio',
       },
@@ -30,16 +32,9 @@ export default defineType({
       name: 'category',
       title: 'Category',
       type: 'string',
-      options: {
-        list: [
-          { title: 'Backend', value: 'Backend' },
-          { title: 'AI/ML', value: 'AI/ML' },
-          { title: 'DevOps', value: 'DevOps' },
-          { title: 'Frontend', value: 'Frontend' },
-          { title: 'Tools', value: 'Tools' },
-        ],
-        layout: 'radio',
-      },
+      // Free text — type any category (Backend, AI/ML, DevOps, Frontend, Tools, etc.)
+      // Automatically appears as filter button on roadmap page
+      description: 'e.g. Backend, AI/ML, DevOps, Frontend, Tools — type anything, appears as filter automatically',
       validation: (Rule) => Rule.required(),
     }),
     defineField({

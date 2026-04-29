@@ -1,10 +1,14 @@
+// types/sanity.ts
+// category fields changed from union literals to string
+// so any category typed in Sanity Studio works on the frontend
+
 // ── Blog ────────────────────────────────────────────────────────────────────
 
 export interface SanityPost {
   title: string
   slug: string
   excerpt: string
-  category: 'Python' | 'AI' | 'Engineering' | 'Career'
+  category: string          // was: 'Python' | 'AI' | 'Engineering' | 'Career'
   publishedAt: string
   coverImage: string | null
   coverImageAlt: string | null
@@ -12,7 +16,6 @@ export interface SanityPost {
 }
 
 export interface SanityPostFull extends SanityPost {
-  // Typed as PortableTextBlock[] at usage point via @portabletext/react
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   body: any[]
 }
@@ -22,7 +25,7 @@ export interface SanityPostFull extends SanityPost {
 export interface SanityProject {
   title: string
   slug: string
-  category: 'Python' | 'AI/ML' | 'Full-Stack' | 'Tools'
+  category: string          // was: 'Python' | 'AI/ML' | 'Full-Stack' | 'Tools'
   shortDescription: string
   techStack: string[]
   githubUrl: string
@@ -48,7 +51,7 @@ export interface SanityCertificate {
   name: string
   issuer: string
   date: string
-  category: 'AI/ML' | 'Backend' | 'Cloud' | 'Other'
+  category: string          // was: 'AI/ML' | 'Backend' | 'Cloud' | 'Other'
   image: string
   imageAlt: string
   credentialUrl: string | null
@@ -59,12 +62,29 @@ export interface SanityCertificate {
 export interface RoadmapItem {
   topic: string
   status: 'Learned' | 'Learning' | 'Planned'
-  category: 'Backend' | 'AI/ML' | 'DevOps' | 'Frontend' | 'Tools'
+  category: string          // was: 'Backend' | 'AI/ML' | 'DevOps' | 'Frontend' | 'Tools'
   resources: string[]
   projectSlug: string | null
 }
 
-// ── Slug helper (for generateStaticParams) ──────────────────────────────────
+// ── Tech Stack (new) ─────────────────────────────────────────────────────────
+
+export interface TechStack {
+  _id: string
+  name: string
+  category: 'language' | 'framework' | 'tool' | 'database' | 'cloud'
+  displayOrder: number
+}
+
+// ── Currently Building (new) ─────────────────────────────────────────────────
+
+export interface CurrentlyBuilding {
+  _id: string
+  description: string
+  link: string | null
+}
+
+// ── Slug helper ──────────────────────────────────────────────────────────────
 
 export interface SanitySlug {
   slug: string
