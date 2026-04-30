@@ -9,8 +9,9 @@ import {
   sanityFetch,
   postBySlugQuery,
   relatedPostsQuery,
+  allPostSlugsOrderedQuery,
 } from '@/lib/sanity'
-import type { SanityPostFull, SanityPost } from '@/types/sanity'
+import type { SanityPostFull, SanityPost, SanitySlug } from '@/types/sanity'
 import BlogCard from '@/components/blog/BlogCard'
 import ShareButtons from '@/components/blog/ShareButtons'
 import NewsletterInline from '@/components/newsletter/NewsletterInline'
@@ -154,15 +155,21 @@ export default async function BlogPostPage({
 
   let post: SanityPostFull | null = null
   let related: SanityPost[] = []
+  let allPostSlugs: SanitySlug[] = []
 
+  // Fetch post + ordered slugs in parallel — slugs don't depend on post data
   try {
-    post = await sanityFetch<SanityPostFull>(postBySlugQuery, { slug })
+    ;[post, allPostSlugs] = await Promise.all([
+      sanityFetch<SanityPostFull>(postBySlugQuery, { slug }),
+      sanityFetch<SanitySlug[]>(allPostSlugsOrderedQuery),
+    ])
   } catch (error) {
     console.error('Failed to fetch post:', error)
   }
 
   if (!post) notFound()
 
+  // Related posts need post.category, so sequential after post resolves
   try {
     related = await sanityFetch<SanityPost[]>(relatedPostsQuery, {
       category: post.category,
@@ -171,6 +178,14 @@ export default async function BlogPostPage({
   } catch {
     related = []
   }
+
+  // ── Prev / Next ─────────────────────────────────────────────────────────────
+  // allPostSlugsOrderedQuery is ordered publishedAt desc — same as the blog list.
+  // "Previous" = newer post (lower index), "Next" = older post (higher index).
+  const currentIndex = allPostSlugs.findIndex((p) => p.slug === slug)
+  const prevPost = currentIndex > 0 ? allPostSlugs[currentIndex - 1] : null
+  const nextPost =
+    currentIndex < allPostSlugs.length - 1 ? allPostSlugs[currentIndex + 1] : null
 
   return (
     <main className="max-w-2xl mx-auto px-4 md:px-6 py-12">
@@ -244,6 +259,45 @@ export default async function BlogPostPage({
               <BlogCard key={p.slug} post={p} />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* 9. Prev / Next navigation */}
+      {(prevPost || nextPost) && (
+        <div className="mt-12 border-t border-border-subtle pt-8 flex justify-between items-start gap-6">
+          {/* Previous = newer post (lower index in publishedAt desc order) */}
+          {prevPost ? (
+            <Link
+              href={`/blog/${prevPost.slug}`}
+              className="group flex flex-col gap-1.5 max-w-[45%]"
+            >
+              <span className="text-xs font-mono text-text-muted group-hover:text-accent-green transition-colors duration-200">
+                ← Previous
+              </span>
+              <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors duration-200 leading-snug">
+                {prevPost.title}
+              </span>
+            </Link>
+          ) : (
+            <div />
+          )}
+
+          {/* Next = older post (higher index in publishedAt desc order) */}
+          {nextPost ? (
+            <Link
+              href={`/blog/${nextPost.slug}`}
+              className="group flex flex-col gap-1.5 items-end max-w-[45%]"
+            >
+              <span className="text-xs font-mono text-text-muted group-hover:text-accent-green transition-colors duration-200">
+                Next →
+              </span>
+              <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors duration-200 leading-snug text-right">
+                {nextPost.title}
+              </span>
+            </Link>
+          ) : (
+            <div />
+          )}
         </div>
       )}
 

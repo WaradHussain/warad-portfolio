@@ -127,7 +127,9 @@ export default async function ProjectCaseStudyPage({
 
   if (!project) notFound()
 
-  // Prev / Next
+  // ── Prev / Next ─────────────────────────────────────────────────────────────
+  // allProjectSlugsQuery is now ordered(order asc, _createdAt desc) matching
+  // the projects list page — so prev/next navigation is consistent with the grid.
   const currentIndex = allSlugs.findIndex((p) => p.slug === slug)
   const prevSlug = currentIndex > 0 ? allSlugs[currentIndex - 1] : null
   const nextSlug = currentIndex < allSlugs.length - 1 ? allSlugs[currentIndex + 1] : null
@@ -280,18 +282,24 @@ export default async function ProjectCaseStudyPage({
       )}
 
       {/* 7. Prev / Next navigation */}
+      {/*
+        FIX: Was showing prevSlug.slug (the URL slug string).
+        Now shows prevSlug.title ?? prevSlug.slug as the human-readable label.
+        allProjectSlugsQuery ordering is also fixed to match allProjectsQuery
+        (order asc, _createdAt desc) so navigation order matches the grid.
+      */}
       {(prevSlug || nextSlug) && (
-        <div className="mt-16 border-t border-border-subtle pt-8 flex justify-between items-start gap-4">
+        <div className="mt-16 border-t border-border-subtle pt-8 flex justify-between items-start gap-6">
           {prevSlug ? (
             <Link
               href={`/projects/${prevSlug.slug}`}
-              className="group flex flex-col gap-1"
+              className="group flex flex-col gap-1.5 max-w-[45%]"
             >
               <span className="text-xs font-mono text-text-muted group-hover:text-accent-green transition-colors duration-200">
                 ← Previous
               </span>
-              <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors duration-200">
-                {prevSlug.slug}
+              <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors duration-200 leading-snug">
+                {prevSlug.title ?? prevSlug.slug}
               </span>
             </Link>
           ) : (
@@ -301,13 +309,13 @@ export default async function ProjectCaseStudyPage({
           {nextSlug ? (
             <Link
               href={`/projects/${nextSlug.slug}`}
-              className="group flex flex-col gap-1 items-end"
+              className="group flex flex-col gap-1.5 items-end max-w-[45%]"
             >
               <span className="text-xs font-mono text-text-muted group-hover:text-accent-green transition-colors duration-200">
                 Next Project →
               </span>
-              <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors duration-200">
-                {nextSlug.slug}
+              <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors duration-200 leading-snug text-right">
+                {nextSlug.title ?? nextSlug.slug}
               </span>
             </Link>
           ) : (
@@ -315,6 +323,7 @@ export default async function ProjectCaseStudyPage({
           )}
         </div>
       )}
+
     </main>
   )
 }

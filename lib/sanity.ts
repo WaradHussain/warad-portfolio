@@ -72,6 +72,12 @@ export const relatedPostsQuery = groq`*[_type == "post" && category == $category
 
 export const allPostSlugsQuery = groq`*[_type == "post"]{"slug": slug.current}`
 
+// Ordered slugs for prev/next navigation — must match allPostsQuery order (publishedAt desc)
+export const allPostSlugsOrderedQuery = groq`*[_type == "post"] | order(publishedAt desc) {
+  "slug": slug.current,
+  title
+}`
+
 // ── PROJECTS ──────────────────────────────────────────────────────────────────
 
 export const allProjectsQuery = groq`*[_type == "project"] | order(order asc, _createdAt desc) {
@@ -107,7 +113,12 @@ export const projectBySlugQuery = groq`*[_type == "project" && slug.current == $
   wouldRedo
 }`
 
-export const allProjectSlugsQuery = groq`*[_type == "project"]{"slug": slug.current, title}`
+// Ordering MUST match allProjectsQuery (order asc, _createdAt desc) so prev/next is consistent
+// with what the user sees on the projects list page.
+export const allProjectSlugsQuery = groq`*[_type == "project"] | order(order asc, _createdAt desc) {
+  "slug": slug.current,
+  title
+}`
 
 // ── CERTIFICATES ──────────────────────────────────────────────────────────────
 
