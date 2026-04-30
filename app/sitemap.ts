@@ -6,12 +6,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
   const staticRoutes = [
-    { url: base,                        priority: 1.0, changeFrequency: 'monthly' as const },
-    { url: `${base}/projects`,          priority: 0.9, changeFrequency: 'weekly'  as const },
-    { url: `${base}/blog`,              priority: 0.9, changeFrequency: 'weekly'  as const },
-    { url: `${base}/certificates`,      priority: 0.7, changeFrequency: 'monthly' as const },
-    { url: `${base}/roadmap`,           priority: 0.7, changeFrequency: 'monthly' as const },
-    { url: `${base}/contact`,           priority: 0.5, changeFrequency: 'yearly'  as const },
+    { url: base,                          priority: 1.0, changeFrequency: 'monthly' as const },
+    { url: `${base}/projects`,            priority: 0.9, changeFrequency: 'weekly'  as const },
+    { url: `${base}/blog`,                priority: 0.9, changeFrequency: 'weekly'  as const },
+    { url: `${base}/certificates`,        priority: 0.7, changeFrequency: 'monthly' as const },
+    { url: `${base}/roadmap`,             priority: 0.7, changeFrequency: 'monthly' as const },
+    { url: `${base}/contact`,             priority: 0.5, changeFrequency: 'yearly'  as const },
+    { url: `${base}/privacy-policy`,      priority: 0.3, changeFrequency: 'yearly'  as const },
+    { url: `${base}/cookie-policy`,       priority: 0.3, changeFrequency: 'yearly'  as const },
   ].map(r => ({ ...r, lastModified: now }))
 
   const [posts, projects] = await Promise.all([

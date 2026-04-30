@@ -1,186 +1,195 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { X } from 'lucide-react'
 
-type State = 'idle' | 'loading' | 'success' | 'error'
+type Status = 'idle' | 'loading' | 'subscribed' | 'resubscribed' | 'already_subscribed' | 'error'
 
 export default function NewsletterModal() {
   const pathname = usePathname()
   const [visible, setVisible] = useState(false)
   const [email, setEmail] = useState('')
+  const [firstName, setFirstName] = useState('')
   const [honeypot, setHoneypot] = useState('')
-  const [state, setState] = useState<State>('idle')
+  const [status, setStatus] = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (!pathname.startsWith('/blog')) return
-    
-    if (sessionStorage.getItem('newsletter-shown')) return
+    const isBlogPage = pathname === '/blog' || pathname.startsWith('/blog/')
+    if (!isBlogPage) return
 
-    const show = () => {
-      if (sessionStorage.getItem('newsletter-shown')) return
-      sessionStorage.setItem('newsletter-shown', '1')
+    const seen = sessionStorage.getItem('newsletter_seen')
+    if (seen) return
+
+    const timer = setTimeout(() => {
       setVisible(true)
-    }
+      sessionStorage.setItem('newsletter_seen', '1')
+    }, 8000)
 
-    const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY <= 0) show()
-    }
-
-    document.addEventListener('mouseleave', handleMouseLeave)
-    timerRef.current = setTimeout(show, 30000)
-
-    return () => {
-      document.removeEventListener('mouseleave', handleMouseLeave)
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
+    return () => clearTimeout(timer)
   }, [pathname])
 
-  useEffect(() => {
-    if (state === 'success') {
-      const t = setTimeout(() => setVisible(false), 3000)
-      return () => clearTimeout(t)
-    }
-  }, [state])
-
-  useEffect(() => {
-    document.body.style.overflow = visible ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [visible])
-
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setVisible(false)
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [])
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setState('loading')
+    if (!email || status === 'loading') return
+    setStatus('loading')
     setErrorMsg('')
 
     try {
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, website: honeypot }),
+        body: JSON.stringify({ email, firstName: firstName.trim(), honeypot }),
       })
       const data = await res.json()
 
       if (!res.ok) {
-        setErrorMsg(data.error ?? 'Something went wrong. Try again.')
-        setState('error')
+        setStatus('error')
+        setErrorMsg(data.error || 'Something went wrong.')
         return
       }
 
-      setState('success')
+      setStatus(data.status || 'subscribed')
     } catch {
+      setStatus('error')
       setErrorMsg('Something went wrong. Try again.')
-      setState('error')
     }
   }
 
   if (!visible) return null
 
+  // ── Done states — auto-close after showing message ────────────────────────
+
+  const isDone = ['subscribed', 'resubscribed', 'already_subscribed'].includes(status)
+
+  const doneContent = {
+    subscribed: {
+      icon: '✓',
+      title: firstName ? `You're in, ${firstName}.` : "You're in.",
+      body: 'Confirmation heading to your inbox now.',
+    },
+    resubscribed: {
+      icon: '↩',
+      title: 'Welcome back.',
+      body: "You're re-subscribed. Good to have you back.",
+    },
+    already_subscribed: {
+      icon: '·',
+      title: "You're already on the list.",
+      body: 'Posts will keep coming your way.',
+    },
+  }
+
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center"
-      onClick={() => setVisible(false)}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center
+                 px-4 pb-4 sm:pb-0"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Newsletter signup"
     >
       <div
-        className="bg-bg-elevated border border-border-glass rounded-2xl p-8 max-w-sm w-full mx-4 relative"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Close */}
-        <button
-          onClick={() => setVisible(false)}
-          aria-label="Close newsletter"
-          className="absolute top-3 right-3 text-text-muted hover:text-text-primary transition-colors duration-200"
-        >
-          <X size={18} />
-        </button>
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={() => setVisible(false)}
+        aria-hidden="true"
+      />
 
-        {state === 'success' ? (
-          <div className="flex flex-col items-center text-center gap-3 py-4">
-            <div className="w-12 h-12 rounded-full bg-accent-dim border border-accent-green/20 flex items-center justify-center">
-              <span className="text-accent-green text-xl">✓</span>
+      <div className="relative z-10 w-full max-w-md bg-bg-secondary border border-border-glass
+                      rounded-2xl overflow-hidden shadow-2xl">
+        <div className="h-0.5 bg-gradient-to-r from-accent-green via-accent-green/60 to-transparent" />
+
+        <div className="p-8">
+          <button
+            onClick={() => setVisible(false)}
+            aria-label="Close"
+            className="absolute top-5 right-5 text-text-muted hover:text-text-primary
+                       transition-colors p-1 rounded-lg hover:bg-bg-elevated cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+
+          {/* Done states */}
+          {isDone && doneContent[status as keyof typeof doneContent] && (
+            <div className="text-center py-4">
+              <div className="w-10 h-10 rounded-full bg-accent-dim border border-accent-green/20
+                              flex items-center justify-center mx-auto mb-5">
+                <span className="text-accent-green text-lg">
+                  {doneContent[status as keyof typeof doneContent].icon}
+                </span>
+              </div>
+              <p className="text-text-primary font-bold text-lg mb-2">
+                {doneContent[status as keyof typeof doneContent].title}
+              </p>
+              <p className="text-text-secondary text-sm leading-relaxed">
+                {doneContent[status as keyof typeof doneContent].body}
+              </p>
             </div>
-            <p className="font-bold text-xl text-text-primary">You're subscribed!</p>
-            <p className="text-text-secondary text-sm">Thanks for joining. See you in your inbox.</p>
-          </div>
-        ) : (
-          <>
-            {/* Icon */}
-            <div className="w-12 h-12 bg-accent-dim border border-accent-green/20 rounded-full flex items-center justify-center mb-5">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00E87A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect width="20" height="16" x="2" y="4" rx="2" />
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-              </svg>
-            </div>
+          )}
 
-            <h2 className="font-bold text-xl text-text-primary">Stay in the loop</h2>
-            <p className="text-text-secondary text-sm mt-1 leading-relaxed">
-              Get notified when I publish new posts on Python, AI, and engineering.
-            </p>
+          {/* Form */}
+          {!isDone && (
+            <>
+              <p className="font-mono text-accent-green text-xs tracking-widest mb-5">
+                NEWSLETTER
+              </p>
+              <h2 className="text-text-primary text-xl font-bold mb-3 leading-snug">
+                Learn without the grind.
+              </h2>
+              <p className="text-text-secondary text-sm leading-relaxed mb-7">
+                Agentic AI, software engineering fundamentals, real lessons from
+                building things. No fluff — only when it&apos;s worth your time.
+              </p>
 
-            <form onSubmit={handleSubmit} className="mt-5 space-y-3">
-              {/* Honeypot */}
-              <input
-                name="website"
-                value={honeypot}
-                onChange={(e) => setHoneypot(e.target.value)}
-                className="hidden"
-                tabIndex={-1}
-                autoComplete="off"
-                aria-hidden="true"
-              />
-
-              {/* Email */}
-              <input
-                type="email"
-                required
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={state === 'loading'}
-                className="w-full bg-bg-primary border border-border-glass rounded-lg px-4 py-3 text-text-primary text-sm placeholder:text-text-muted focus:border-accent-green/50 outline-none transition-colors duration-200 disabled:opacity-50"
-              />
-
-              {/* Error */}
-              {state === 'error' && (
-                <p className="text-red-400 text-xs">{errorMsg}</p>
-              )}
-
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={state === 'loading'}
-                className="w-full bg-accent-green text-bg-primary font-semibold rounded-lg py-3 text-sm hover:bg-accent-green/90 transition-colors duration-200 disabled:opacity-70 flex items-center justify-center gap-2"
-              >
-                {state === 'loading' ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
-                    Subscribing...
-                  </>
-                ) : (
-                  'Subscribe'
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <input
+                  type="text"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  style={{ display: 'none' }}
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                />
+                <input
+                  type="text"
+                  placeholder="First name (optional)"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full bg-bg-elevated border border-border-glass rounded-xl
+                             px-4 py-3 text-text-primary text-sm placeholder:text-text-muted
+                             focus:outline-none focus:border-accent-green/40 transition-colors"
+                />
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full bg-bg-elevated border border-border-glass rounded-xl
+                             px-4 py-3 text-text-primary text-sm placeholder:text-text-muted
+                             focus:outline-none focus:border-accent-green/40 transition-colors"
+                />
+                {status === 'error' && (
+                  <p className="text-red-400 text-xs">{errorMsg}</p>
                 )}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={status === 'loading'}
+                  className="w-full bg-accent-green text-black font-bold text-sm py-3.5
+                             rounded-xl hover:bg-accent-green/90 transition-all duration-200
+                             disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {status === 'loading' ? 'Subscribing...' : 'Subscribe'}
+                </button>
+              </form>
 
-            <p className="font-mono text-xs text-text-muted text-center mt-3">
-              No spam. Unsubscribe anytime.
-            </p>
-          </>
-        )}
+              <p className="text-text-muted text-xs text-center mt-4">
+                No spam. Unsubscribe any time.
+              </p>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Mono } from "next/font/google";
+import Script from "next/script";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import ChatWidget from '@/components/chatbot/ChatWidget'
 import "./globals.css";
 import NewsletterProvider from '@/components/newsletter/NewsletterProvider'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"
+import ConsentHandler from "@/components/consent/ConsentHandler"
 
 /* ── Fonts ──────────────────────────────────────────────── */
 
@@ -57,6 +58,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_ID
+  const termlyId = process.env.NEXT_PUBLIC_TERMLY_WEBSITE_UUID
+
   return (
     <html
       lang="en"
@@ -65,6 +69,40 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="font-sans bg-bg-primary text-text-primary antialiased flex flex-col min-h-screen">
+
+        {/*
+          ── Google Consent Mode v2 ─────────────────────────
+          Runs before GA loads. Default: all denied.
+          ConsentHandler below listens for Termly consent
+          event and updates GA4 consent accordingly.
+        */}
+        <Script id="google-consent-init" strategy="beforeInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('consent', 'default', {
+              analytics_storage: 'denied',
+              ad_storage: 'denied',
+              ad_user_data: 'denied',
+              ad_personalization: 'denied',
+              wait_for_update: 500
+            });
+          `}
+        </Script>
+
+        {/*
+          ── Termly Cookie Consent Banner ───────────────────
+          Loads after page is interactive — does not block render.
+          Set NEXT_PUBLIC_TERMLY_WEBSITE_UUID in .env.local
+          Get it: termly.io → Websites → your site → embed snippet
+        */}
+        {termlyId && (
+          <Script
+            id="termly-consent"
+            src={`https://app.termly.io/resource-blocker/${termlyId}?autoBlock=on`}
+            strategy="afterInteractive"
+          />
+        )}
 
         {/* Accessibility: skip to main content */}
         <a
@@ -79,8 +117,30 @@ export default function RootLayout({
         <Footer />
         <NewsletterProvider />
         {/* <ChatWidget /> */}
-        <Analytics/>
-        <SpeedInsights/>
+
+        {/* Bridges Termly consent events → GA4 Consent Mode v2 */}
+        <ConsentHandler />
+
+        <Analytics />
+        <SpeedInsights />
+
+        {/* GA4 — respects consent mode, only tracks after user accepts */}
+        {gaId && (
+  <>
+    <Script
+      src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+      strategy="afterInteractive"
+    />
+    <Script id="ga4-init" strategy="afterInteractive">
+      {`
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${gaId}');
+      `}
+    </Script>
+  </>
+)}
       </body>
     </html>
   );

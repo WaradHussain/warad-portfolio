@@ -1,16 +1,13 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // Turbopack config (Next.js 16 default) — replaces webpack block
-  // Empty object silences the turbopack/webpack mismatch error
-  // @sanity/prism-groq is an optional dep — Turbopack handles missing
-  // optional dynamic imports gracefully without explicit config
   turbopack: {},
 
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'cdn.sanity.io' },
       { protocol: 'https', hostname: 'cdn.jsdelivr.net' },
+      { protocol: 'https', hostname: 'cdn.simpleicons.org' },
     ],
   },
 
@@ -34,7 +31,8 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://cdn.sanity.io https://cdn.jsdelivr.net",
+              // cdn.simpleicons.org added for tech stack logos
+              "img-src 'self' data: blob: https://cdn.sanity.io https://cdn.jsdelivr.net https://cdn.simpleicons.org",
               "connect-src 'self' https://*.supabase.co https://api.groq.com https://*.sanity.io wss://*.sanity.io",
               "frame-src https://www.youtube.com https://www.loom.com https://fast.wistia.net https://play.gumlet.io",
               "frame-ancestors 'none'",
@@ -43,7 +41,7 @@ const nextConfig: NextConfig = {
         ],
       },
 
-      // Studio route — looser CSP so Sanity Studio loads properly
+      // Studio route — looser CSP
       {
         source: '/studio/:path*',
         headers: [

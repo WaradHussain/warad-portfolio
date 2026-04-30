@@ -1,78 +1,103 @@
-import { subscribeRatelimit, applyRatelimit } from '@/lib/ratelimit'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import { applyRatelimit, subscribeRatelimit } from '@/lib/ratelimit'
+import { renderConfirmation } from '@/emails/SubscriptionConfirmation'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: NextRequest) {
   const { limited } = await applyRatelimit(subscribeRatelimit, req)
   if (limited) {
-  return NextResponse.json(
-    { error: 'Too many requests. Try again later.' },
-    { status: 429 }
+    return NextResponse.json(
+      { error: 'Too many requests. Try again later.' },
+      { status: 429 }
     )
-    }
+  }
+
   try {
     const body = await req.json()
+    const { email, firstName, honeypot } = body
 
-    // Honeypot — bot hai to silently ok return karo
-    if (body.website) {
-      return NextResponse.json({ ok: true })
+    if (honeypot) return NextResponse.json({ success: true })
+
+    if (!email || !email.includes('@')) {
+      return NextResponse.json(
+        { error: 'Enter a valid email address.' },
+        { status: 400 }
+      )
     }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!body.email || !emailRegex.test(body.email)) {
-      return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
-    }
+    const name = firstName?.trim() || undefined
 
-    // Env check
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('Supabase env vars missing')
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
-    }
+    // ── Try creating new contact ───────────────────────────────────────────
+    try {
+      await resend.contacts.create({
+        email,
+        firstName: name,
+        unsubscribed: false,
+      })
 
-    // Supabase insert
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
+      // New subscriber
+      const html = await renderConfirmation({ name, email, isWelcomeBack: false })
 
-    const { error: dbError } = await supabase
-      .from('subscribers')
-      .insert({ email: body.email })
+      await resend.emails.send({
+        from: 'Warad Hussain <hi@waradhussain.com>',
+        to: email,
+        subject: "you're in.",
+        html,
+        headers: {
+          'List-Unsubscribe': `<https://waradhussain.com/unsubscribe?email=${encodeURIComponent(email)}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
+      })
 
-    // 23505 = unique_violation (already subscribed) — treat as success
-    if (dbError && dbError.code !== '23505') {
-      console.error('Supabase error:', dbError)
-      return NextResponse.json({ error: 'Could not subscribe' }, { status: 500 })
-    }
+      return NextResponse.json({ success: true, status: 'subscribed' })
 
-    // Welcome email — sirf naye subscribers ko
-    if (!dbError) {
-      if (!process.env.RESEND_API_KEY) {
-        console.error('RESEND_API_KEY missing')
-      } else {
-        const resend = new Resend(process.env.RESEND_API_KEY)
+    } catch (createError: unknown) {
+      const msg = createError instanceof Error ? createError.message.toLowerCase() : ''
+
+      if (msg.includes('already exists')) {
+        // Try to re-enable — works if they unsubscribed, no-op if active
+        try {
+          await resend.contacts.update({email, unsubscribed: false })
+        } catch {
+          // Active subscriber — just tell them
+          return NextResponse.json({
+            success: false,
+            status: 'already_subscribed',
+            message: "You're already on the list.",
+          })
+        }
+
+        // Welcome back email
+        const html = await renderConfirmation({ name, email, isWelcomeBack: true })
+
         await resend.emails.send({
           from: 'Warad Hussain <hi@waradhussain.com>',
-          to: body.email,
-          subject: "You're subscribed to Warad's blog",
-          html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;background:#09090b;color:#f0f0f0;padding:32px;border-radius:12px;">
-            <p style="color:#00e87a;font-family:monospace;font-size:12px;">waradhussain.com</p>
-            <h1 style="font-size:20px;font-weight:700;margin-top:16px;">You're in! 🎉</h1>
-            <p style="color:#888888;font-size:14px;line-height:1.7;margin-top:8px;">
-              You'll get an email when I publish new posts on Python, AI, and engineering.
-            </p>
-            <hr style="border:none;border-top:1px solid #1f1f1f;margin:24px 0;"/>
-            <p style="color:#555555;font-size:11px;font-family:monospace;">waradhussain.com</p>
-          </div>`,
+          to: email,
+          subject: 'welcome back.',
+          html,
+          headers: {
+            'List-Unsubscribe': `<https://waradhussain.com/unsubscribe?email=${encodeURIComponent(email)}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+        })
+
+        return NextResponse.json({
+          success: true,
+          status: 'resubscribed',
+          message: "Welcome back. You're re-subscribed.",
         })
       }
+
+      throw createError
     }
 
-    return NextResponse.json({ ok: true })
   } catch (error) {
-    console.error('Subscribe route error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[subscribe]', error)
+    return NextResponse.json(
+      { error: 'Something went wrong. Try again in a moment.' },
+      { status: 500 }
+    )
   }
 }

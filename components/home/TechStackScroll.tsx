@@ -1,95 +1,175 @@
 'use client'
 // components/home/TechStackScroll.tsx
-// Animated infinite marquee — Row 1 scrolls left, Row 2 scrolls right
-// Hover on row → pauses animation
-// Logos auto-loaded from devicons CDN — text badge fallback if no logo
+// Simple Icons — perfect brand colors on dark bg
+// Pure CSS seamless loop — zero gap
+// Pointer drag to scroll
+// Hover pause
+// Glass fade edges
 
-import Image from 'next/image'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useEffect, useCallback } from 'react'
 import type { TechStack } from '@/types/sanity'
-import { getDeviconUrl, getFallbackColor } from '@/lib/devicons'
+import { getSimpleIconUrl, getFallbackColor } from '@/lib/simpleicons'
 
-interface Props {
-  items: TechStack[]
-}
+// ── Constants ─────────────────────────────────────────────────────────────────
+const ITEM_WIDTH = 88   // px — fixed width per item (card + gap)
+const ITEM_GAP   = 12   // px — gap between cards
 
+// ── Single tech item ──────────────────────────────────────────────────────────
 function TechItem({ name }: { name: string }) {
-  const logoUrl = getDeviconUrl(name)
-  const fallbackColor = getFallbackColor(name)
-  const [imgError, setImgError] = useState(false)
+  const iconUrl     = getSimpleIconUrl(name)
+  const fallback    = getFallbackColor(name)
 
   return (
-    <div className="flex-shrink-0 flex flex-col items-center justify-center gap-2 w-20 h-20 bg-bg-glass border border-border-glass rounded-xl mx-2 hover:border-accent-green/30 transition-colors duration-200">
-      {logoUrl && !imgError ? (
-        <Image
-          src={logoUrl}
+    <div
+      className="flex-shrink-0 flex flex-col items-center justify-center gap-2 rounded-xl border border-border-glass bg-bg-glass backdrop-blur-sm hover:border-accent-green/40 hover:bg-white/[0.06] transition-colors duration-200 select-none"
+      style={{ width: ITEM_WIDTH - ITEM_GAP, height: 84, marginRight: ITEM_GAP }}
+    >
+      {iconUrl ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={iconUrl}
           alt={name}
-          width={36}
-          height={36}
-          className="object-contain"
-          onError={() => setImgError(true)}
-          unoptimized
+          width={32}
+          height={32}
+          draggable={false}
+          style={{ objectFit: 'contain', width: 32, height: 32 }}
         />
       ) : (
         <span
-          className="text-xs font-bold px-1.5 py-0.5 rounded"
+          className="text-[10px] font-bold px-1.5 py-0.5 rounded font-mono"
           style={{
-            backgroundColor: `${fallbackColor}20`,
-            color: fallbackColor,
-            border: `1px solid ${fallbackColor}40`,
+            backgroundColor: `${fallback}20`,
+            color: fallback,
+            border: `1px solid ${fallback}40`,
           }}
         >
-          {name.slice(0, 3).toUpperCase()}
+          {name.slice(0, 4).toUpperCase()}
         </span>
       )}
-      <span className="text-[10px] font-mono text-text-secondary text-center leading-tight px-1 truncate w-full text-center">
+      <span className="text-[9px] font-mono text-text-secondary text-center leading-tight w-full px-1 truncate text-center">
         {name}
       </span>
     </div>
   )
 }
 
-interface MarqueeRowProps {
+// ── Marquee row ───────────────────────────────────────────────────────────────
+interface RowProps {
   items: TechStack[]
   direction: 'left' | 'right'
-  speed: number
+  speed: number // pixels per second
 }
 
-function MarqueeRow({ items, direction, speed }: MarqueeRowProps) {
+function MarqueeRow({ items, direction, speed }: RowProps) {
+  const trackRef    = useRef<HTMLDivElement>(null)
+  const rafRef      = useRef<number>(0)
+  const posRef      = useRef<number>(0)        // current translateX in px
+  const pausedRef   = useRef<boolean>(false)
+  const dragRef     = useRef<{ active: boolean; startX: number; startPos: number }>({
+    active: false, startX: 0, startPos: 0,
+  })
+  const lastTimeRef = useRef<number | null>(null)
+
+  // Total width of ONE set of items
+  const setWidth = items.length * ITEM_WIDTH
+
+  // Direction multiplier: left = negative, right = positive
+  const dir = direction === 'left' ? -1 : 1
+
+  const setTranslate = useCallback((x: number) => {
+    if (!trackRef.current) return
+    trackRef.current.style.transform = `translateX(${x}px)`
+  }, [])
+
+  // Wrap position so it always stays within [-setWidth, 0]
+  const wrap = useCallback((x: number): number => {
+    // Normalise into [0, setWidth)
+    const mod = ((x % setWidth) + setWidth) % setWidth
+    // Map back to [-setWidth, 0] range
+    return mod - setWidth
+  }, [setWidth])
+
+  // rAF loop
+  const tick = useCallback((timestamp: number) => {
+    if (lastTimeRef.current === null) lastTimeRef.current = timestamp
+    const delta = (timestamp - lastTimeRef.current) / 1000 // seconds
+    lastTimeRef.current = timestamp
+
+    if (!pausedRef.current && !dragRef.current.active) {
+      posRef.current = wrap(posRef.current + dir * speed * delta)
+      setTranslate(posRef.current)
+    }
+
+    rafRef.current = requestAnimationFrame(tick)
+  }, [dir, speed, wrap, setTranslate])
+
+  useEffect(() => {
+    // Start position
+    posRef.current = direction === 'left' ? 0 : -setWidth + 1
+    setTranslate(posRef.current)
+    rafRef.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [tick, direction, setWidth, setTranslate])
+
+  // ── Pointer drag handlers ─────────────────────────────────────────────────
+  const onPointerDown = (e: React.PointerEvent) => {
+    dragRef.current = { active: true, startX: e.clientX, startPos: posRef.current }
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current.active) return
+    const dx = e.clientX - dragRef.current.startX
+    posRef.current = wrap(dragRef.current.startPos + dx)
+    setTranslate(posRef.current)
+  }
+
+  const onPointerUp = () => {
+    dragRef.current.active = false
+    lastTimeRef.current = null // reset delta so no jump after drag
+  }
+
+  // ── Hover pause ───────────────────────────────────────────────────────────
+  const onMouseEnter = () => { pausedRef.current = true }
+  const onMouseLeave = () => {
+    pausedRef.current = false
+    lastTimeRef.current = null
+  }
+
   if (items.length === 0) return null
-  // Duplicate array so seamless loop works
-  const doubled = [...items, ...items]
+
+  // Triple-clone so there's always content visible at any drag position
+  const tripled = [...items, ...items, ...items]
 
   return (
     <div
-      className="overflow-hidden group"
-      style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}
+      className="overflow-hidden relative cursor-grab active:cursor-grabbing"
+      style={{
+        // Glass fade on both edges
+        maskImage: 'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+      }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
     >
-      <style>{`
-        @keyframes marquee-left {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-        @keyframes marquee-right {
-          from { transform: translateX(-50%); }
-          to   { transform: translateX(0); }
-        }
-      `}</style>
+      {/* Subtle glass shimmer overlay */}
       <div
-        className="flex"
+        className="absolute inset-0 pointer-events-none z-10"
         style={{
-          animation: `${direction === 'left' ? 'marquee-left' : 'marquee-right'} ${speed}s linear infinite`,
-          animationPlayState: 'running',
-          width: 'max-content',
+          background: 'linear-gradient(90deg, rgba(10,10,10,0.6) 0%, transparent 12%, transparent 88%, rgba(10,10,10,0.6) 100%)',
         }}
-        onMouseEnter={(e) => {
-          ;(e.currentTarget as HTMLDivElement).style.animationPlayState = 'paused'
-        }}
-        onMouseLeave={(e) => {
-          ;(e.currentTarget as HTMLDivElement).style.animationPlayState = 'running'
-        }}
+      />
+
+      <div
+        ref={trackRef}
+        className="flex will-change-transform"
+        style={{ width: tripled.length * ITEM_WIDTH }}
       >
-        {doubled.map((item, i) => (
+        {tripled.map((item, i) => (
           <TechItem key={`${item._id}-${i}`} name={item.name} />
         ))}
       </div>
@@ -97,18 +177,22 @@ function MarqueeRow({ items, direction, speed }: MarqueeRowProps) {
   )
 }
 
-export default function TechStackScroll({ items }: Props) {
+// ── Main export ───────────────────────────────────────────────────────────────
+export default function TechStackScroll({ items }: { items: TechStack[] }) {
   const { row1, row2 } = useMemo(() => {
-    const row1 = items.filter((i) =>
-      ['language', 'framework'].includes(i.category)
-    )
-    const row2 = items.filter((i) =>
-      ['tool', 'database', 'cloud'].includes(i.category)
-    )
-    // If everything is in one category, split evenly
-    if (row1.length === 0) return { row1: items.slice(0, Math.ceil(items.length / 2)), row2: items.slice(Math.ceil(items.length / 2)) }
-    if (row2.length === 0) return { row1: items.slice(0, Math.ceil(items.length / 2)), row2: items.slice(Math.ceil(items.length / 2)) }
-    return { row1, row2 }
+    const r1 = items.filter((i) => ['language', 'framework'].includes(i.category))
+    const r2 = items.filter((i) => ['tool', 'database', 'cloud'].includes(i.category))
+
+    // Fallback: split evenly if all in same category
+    if (r1.length === 0) {
+      const mid = Math.ceil(items.length / 2)
+      return { row1: items.slice(0, mid), row2: items.slice(mid) }
+    }
+    if (r2.length === 0) {
+      const mid = Math.ceil(items.length / 2)
+      return { row1: items.slice(0, mid), row2: items.slice(mid) }
+    }
+    return { row1: r1, row2: r2 }
   }, [items])
 
   if (items.length === 0) {
@@ -120,9 +204,11 @@ export default function TechStackScroll({ items }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <MarqueeRow items={row1} direction="left" speed={30} />
-      {row2.length > 0 && <MarqueeRow items={row2} direction="right" speed={40} />}
+    <div className="flex flex-col gap-5">
+      <MarqueeRow items={row1} direction="left"  speed={80} />
+      {row2.length > 0 && (
+        <MarqueeRow items={row2} direction="right" speed={65} />
+      )}
     </div>
   )
 }

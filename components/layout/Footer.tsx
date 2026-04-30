@@ -21,16 +21,42 @@ const socialLinks = [
   },
 ];
 
+const legalLinks = [
+  { href: '/privacy-policy', label: 'Privacy Policy' },
+  { href: '/cookie-policy', label: 'Cookie Policy' },
+]
+
 export default function Footer() {
   return (
     <footer className="border-t border-border-subtle">
       <div className="max-w-6xl mx-auto px-4 md:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Left */}
-        <p className="text-sm text-text-muted font-sans">
-          Warad Hussain{" "}
-          <span className="mx-1.5 opacity-40">·</span>
-          <span>© {new Date().getFullYear()}</span>
-        </p>
+
+        {/* Left — copyright + legal links */}
+        <div className="flex items-center gap-4 flex-wrap justify-center sm:justify-start">
+          <p className="text-sm text-text-muted font-sans">
+            Warad Hussain{" "}
+            <span className="mx-1.5 opacity-40">·</span>
+            <span>© {new Date().getFullYear()}</span>
+          </p>
+          <div className="flex items-center gap-3">
+            {legalLinks.map(({ href, label }) => (
+              <Link
+                key={label}
+                href={href}
+                className="text-xs text-text-muted hover:text-text-secondary transition-colors duration-200 font-sans"
+              >
+                {label}
+              </Link>
+            ))}
+            {/* Termly Consent Preferences — opens banner again */}
+            <a
+              href="#"
+              className="termly-display-preferences text-xs text-text-muted hover:text-text-secondary transition-colors duration-200 font-sans"
+            >
+              Consent Preferences
+            </a>
+          </div>
+        </div>
 
         {/* Right — social icons */}
         <div className="flex items-center gap-4">
@@ -47,6 +73,7 @@ export default function Footer() {
             </Link>
           ))}
         </div>
+
       </div>
     </footer>
   );

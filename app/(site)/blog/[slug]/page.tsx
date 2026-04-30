@@ -13,6 +13,7 @@ import {
 import type { SanityPostFull, SanityPost } from '@/types/sanity'
 import BlogCard from '@/components/blog/BlogCard'
 import ShareButtons from '@/components/blog/ShareButtons'
+import NewsletterInline from '@/components/newsletter/NewsletterInline'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -229,7 +230,12 @@ export default async function BlogPostPage({
         <ShareButtons title={post.title} slug={post.slug} />
       </div>
 
-      {/* 7. Related posts */}
+      {/* 7. Newsletter — person just finished reading, highest intent moment */}
+      <div className="mt-10">
+        <NewsletterInline context="post" postTitle={post.title} />
+      </div>
+
+      {/* 8. Related posts */}
       {related.length > 0 && (
         <div className="mt-12">
           <p className="text-sm font-mono text-text-muted mb-6">Related posts</p>
@@ -240,6 +246,7 @@ export default async function BlogPostPage({
           </div>
         </div>
       )}
+
     </main>
   )
 }
