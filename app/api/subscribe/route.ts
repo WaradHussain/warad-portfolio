@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         unsubscribed: false,
       })
 
-      // New subscriber
+      // Genuinely new subscriber — send confirmation
       const html = await renderConfirmation({ name, email, isWelcomeBack: false })
 
       await resend.emails.send({
@@ -57,11 +57,15 @@ export async function POST(req: NextRequest) {
       const msg = createError instanceof Error ? createError.message.toLowerCase() : ''
 
       if (msg.includes('already exists')) {
-        // Try to re-enable — works if they unsubscribed, no-op if active
+
+        // ── Contact exists — fetch to check if unsubscribed ───────────────
+        let isUnsubscribed = false
+
         try {
-          await resend.contacts.update({email, unsubscribed: false })
+          const { data: contact } = await resend.contacts.get({ email })
+          isUnsubscribed = contact?.unsubscribed === true
         } catch {
-          // Active subscriber — just tell them
+          // Can't fetch — assume active, don't send email
           return NextResponse.json({
             success: false,
             status: 'already_subscribed',
@@ -69,7 +73,18 @@ export async function POST(req: NextRequest) {
           })
         }
 
-        // Welcome back email
+        if (!isUnsubscribed) {
+          // Active subscriber — just tell them, no email
+          return NextResponse.json({
+            success: false,
+            status: 'already_subscribed',
+            message: "You're already on the list.",
+          })
+        }
+
+        // Was unsubscribed — re-enable and send welcome back
+        await resend.contacts.update({ email, unsubscribed: false })
+
         const html = await renderConfirmation({ name, email, isWelcomeBack: true })
 
         await resend.emails.send({

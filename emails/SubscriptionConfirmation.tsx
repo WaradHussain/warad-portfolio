@@ -57,7 +57,7 @@ export default function SubscriptionConfirmation({
             <Link href={`${baseUrl}/blog`} style={button}>
               Read the latest post →
             </Link>
-            <Text style={signature}>— Warad</Text>
+            <Text style={signature}>— Warad</Text>g
           </Section>
           <Hr style={divider} />
           <Section style={footer}>

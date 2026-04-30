@@ -15,6 +15,7 @@ export default function NewsletterModal() {
   const [status, setStatus] = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
+  // Show modal on blog pages after 8s — once per session
   useEffect(() => {
     const isBlogPage = pathname === '/blog' || pathname.startsWith('/blog/')
     if (!isBlogPage) return
@@ -29,6 +30,18 @@ export default function NewsletterModal() {
 
     return () => clearTimeout(timer)
   }, [pathname])
+
+  // Auto-close 3 seconds after success
+  useEffect(() => {
+    const isDone = ['subscribed', 'resubscribed', 'already_subscribed'].includes(status)
+    if (!isDone) return
+
+    const timer = setTimeout(() => {
+      setVisible(false)
+    }, 3000)
+
+    return () => clearTimeout(timer)
+  }, [status])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -59,8 +72,6 @@ export default function NewsletterModal() {
 
   if (!visible) return null
 
-  // ── Done states — auto-close after showing message ────────────────────────
-
   const isDone = ['subscribed', 'resubscribed', 'already_subscribed'].includes(status)
 
   const doneContent = {
@@ -83,8 +94,7 @@ export default function NewsletterModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center
-                 px-4 pb-4 sm:pb-0"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-4 sm:pb-0"
       role="dialog"
       aria-modal="true"
       aria-label="Newsletter signup"
@@ -123,6 +133,9 @@ export default function NewsletterModal() {
               </p>
               <p className="text-text-secondary text-sm leading-relaxed">
                 {doneContent[status as keyof typeof doneContent].body}
+              </p>
+              <p className="text-text-muted text-xs mt-4 font-mono">
+                closing in a moment...
               </p>
             </div>
           )}
